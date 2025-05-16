@@ -1,39 +1,60 @@
 services:
     backend:
         build:
+          #Construire l'image à partir du Dockerfile dans le répertoire ./backend/simpleapi
           context: ./backend/simpleapi
+        # On nomme notre conteneur
         container_name: springApiContainer
+        # On expose le port 8080 de notre conteneur sur le port 8081 de la machine hôte
         ports:
           - "8081:8080"
         networks:
           - app-network
+
+        # On attend que la base de données (database) soit démarrée
         depends_on:
           - database
 
     database:
         build:
+          #Construire l'image à partir du Dockerfile dans le répertoire ./database
           context: ./database
+        # On nomme notre conteneur
         container_name: PostgresContainer
         networks:
           - app-network
+        # On définit le volume pour la base de données
         volumes:
           - db-data:/var/lib/postgresql/data
+        
+        # On met les variables d'environnement pour la base de données
+        # On utilise un fichier .env pour stocker les variables d'environnement
+        environment:
+          POSTGRES_DB: ${POSTGRES_DB}
+          POSTGRES_USER: ${POSTGRES_USER}
+          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
     httpd:
         build:
+          #Construire l'image à partir du Dockerfile dans le répertoire ./frontend
           context: ./frontend
+        # On nomme notre conteneur
         container_name: httpServeurContainer
+        # On expose le port 80 de notre conteneur sur le port 8082 de la machine hôte (on passe par le reverse proxy)
         ports:
           - "8082:80"
         networks:
           - app-network
+        # On attend que le backend soit démarré
         depends_on:
           - backend
 
+#On définit un réseau privé pour nos conteneurs
 networks:
   app-network:
     driver: bridge
 
+#On définit un volume pour la base de données
 volumes:
   db-data:
     driver: local
